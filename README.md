@@ -43,7 +43,8 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
 ### Compilation
 
 1. **Open a WSL terminal or Linux terminal**
-   ```bash - for example
+   ```bash 
+   - for example
    ```
 
 2. **Clone the Repository:**
@@ -58,7 +59,8 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
 
 4. **Open in a Code editor
    ```bash
-   code . - for vs code
+   code . 
+   - for vs code
    ```
 
 5. **Do the necessary configuration
