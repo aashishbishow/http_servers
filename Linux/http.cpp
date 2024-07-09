@@ -8,6 +8,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <unordered_map>  // Include for std::unordered_map
+#include <filesystem>     // Include for std::filesystem
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
@@ -16,15 +18,34 @@
 
 namespace fs = std::filesystem;
 
-std::string build_http_response(const std::string& status, const std::string& content_type, const std::string& body) {
+// Define mime_types as a global unordered_map
+std::unordered_map<std::string, std::string> mime_types = {
+    {".html", "text/html"},
+    {".css", "text/css"},
+    {".js", "application/javascript"},
+    {".png", "image/png"},
+    {".jpg", "image/jpeg"},
+    {".jpeg", "image/jpeg"},
+    {".gif", "image/gif"}
+};
+
+std::string build_http_response(const std::string& status, const std::string& content_type, std::string&& body) {
     std::ostringstream response;
     response << "HTTP/1.1 " << status << "\r\n";
     response << "Content-Length: " << body.size() << "\r\n";
     response << "Content-Type: " << content_type << "\r\n";
     response << "Connection: close\r\n";
     response << "\r\n";
-    response << body;
+    response << std::move(body);
     return response.str();
+}
+
+std::string get_content_type(const std::string& path) {
+    auto ext = fs::path(path).extension().string();
+    if (mime_types.find(ext) != mime_types.end()) {
+        return mime_types.at(ext);
+    }
+    return "text/plain";
 }
 
 std::string get_file_content(const std::string& path) {
@@ -38,15 +59,6 @@ std::string get_file_content(const std::string& path) {
     return contents.str();
 }
 
-std::string get_content_type(const std::string& path) {
-    if (path.ends_with(".html")) return "text/html";
-    if (path.ends_with(".css")) return "text/css";
-    if (path.ends_with(".js")) return "application/javascript";
-    if (path.ends_with(".png")) return "image/png";
-    if (path.ends_with(".jpg") || path.ends_with(".jpeg")) return "image/jpeg";
-    if (path.ends_with(".gif")) return "image/gif";
-    return "text/plain";
-}
 
 void handle_php_request(int client_socket, const std::string& script_path) {
     int child_out_pipe[2];
@@ -74,7 +86,7 @@ void handle_php_request(int client_socket, const std::string& script_path) {
         }
 
         // Build HTTP response
-        std::string response = build_http_response("200 OK", "text/html", response_body.str());
+        std::string response = build_http_response("200 OK", "text/html", std::move(response_body.str()));
         send(client_socket, response.c_str(), response.size(), 0);
         close(client_socket);
     } else {
@@ -109,17 +121,17 @@ void handle_client(int client_socket) {
                 return;
             } else {
                 body = get_file_content(full_path);
-                response = build_http_response("200 OK", get_content_type(full_path), body);
+                response = build_http_response("200 OK", get_content_type(full_path), std::move(body));
             }
         } else {
             body = "<html><body><h1>404 Not Found</h1></body></html>";
-            response = build_http_response("404 Not Found", "text/html", body);
+            response = build_http_response("404 Not Found", "text/html", std::move(body));
         }
     } else if (method == "POST" || method == "PUT" || method == "PATCH") {
         // Handle POST/PUT/PATCH requests here
         // Example: Read request body and process accordingly
         body = buffer + request.tellg();
-        response = build_http_response("200 OK", "text/plain", "Received " + method + " data:\n" + body);
+        response = build_http_response("200 OK", "text/plain", "Received " + method + " data:\n" + std::move(body));
     } else if (method == "DELETE") {
         response = build_http_response("200 OK", "text/plain", "DELETE method received");
     } else if (method == "HEAD") {
@@ -144,7 +156,7 @@ void handle_client(int client_socket) {
         response = build_http_response("200 OK", "text/plain", "VIEW method received");
     } else {
         body = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
-        response = build_http_response("405 Method Not Allowed", "text/html", body);
+        response = build_http_response("405 Method Not Allowed", "text/html", std::move(body));
     }
 
     send(client_socket, response.c_str(), response.size(), 0);
@@ -186,8 +198,6 @@ int main() {
 
     std::cout << "HTTP server is listening on port " << PORT << std::endl;
 
-    std::vector<std::thread> threads;
-
     while (true) {
         if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
             std::cerr << "Accept failed" << std::endl;
@@ -195,13 +205,7 @@ int main() {
         }
 
         std::cout << "Connection accepted" << std::endl;
-        threads.emplace_back(handle_client, new_socket);
-    }
-
-    for (auto& th : threads) {
-        if (th.joinable()) {
-            th.join();
-        }
+        std::thread(handle_client, new_socket).detach();
     }
 
     close(server_fd);
