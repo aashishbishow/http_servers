@@ -44,7 +44,7 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
 
 1. **Open a WSL terminal or Linux terminal**
    ```bash 
-   - for example
+   - bash for example
    ```
 
 2. **Clone the Repository:**
