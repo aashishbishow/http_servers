@@ -15,6 +15,7 @@
 #define PORT 8080
 #define BUFFER_SIZE 4096
 #define WEB_ROOT "./www"
+#define PHP_CGI "/usr/bin/php-cgi" // Adjust the path to your PHP CGI executable
 
 namespace fs = std::filesystem;
 
@@ -50,6 +51,42 @@ std::string get_content_type(const std::string& path) {
     return "text/plain";
 }
 
+void handle_php_request(int client_socket, const std::string& script_path) {
+    int child_out_pipe[2];
+    pipe(child_out_pipe);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Child process
+        dup2(child_out_pipe[1], STDOUT_FILENO); // Redirect stdout to pipe write end
+        close(child_out_pipe[0]); // Close unused pipe read end
+
+        // Execute PHP script
+        execl(PHP_CGI, PHP_CGI, "-q", "-f", script_path.c_str(), nullptr);
+        exit(EXIT_SUCCESS); // Should not reach here unless execl fails
+    } else if (pid > 0) {
+        // Parent process
+        close(child_out_pipe[1]); // Close unused pipe write end
+
+        // Read from pipe (output from PHP script)
+        char buffer[BUFFER_SIZE];
+        std::ostringstream response_body;
+        ssize_t bytes_read;
+        while ((bytes_read = read(child_out_pipe[0], buffer, BUFFER_SIZE)) > 0) {
+            response_body.write(buffer, bytes_read);
+        }
+
+        // Build HTTP response
+        std::string response = build_http_response("200 OK", "text/html", response_body.str());
+        send(client_socket, response.c_str(), response.size(), 0);
+        close(client_socket);
+    } else {
+        // Error forking
+        std::cerr << "Failed to fork process for PHP execution" << std::endl;
+        close(client_socket);
+    }
+}
+
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE];
     int valread;
@@ -74,8 +111,13 @@ void handle_client(int client_socket) {
         if (path == "/") path = "/index.html";
         std::string full_path = WEB_ROOT + path;
         if (fs::exists(full_path) && !fs::is_directory(full_path)) {
-            body = get_file_content(full_path);
-            response = build_http_response("200 OK", get_content_type(full_path), body);
+            if (full_path.ends_with(".php")) {
+                handle_php_request(client_socket, full_path);
+                return;
+            } else {
+                body = get_file_content(full_path);
+                response = build_http_response("200 OK", get_content_type(full_path), body);
+            }
         } else {
             body = "<html><body><h1>404 Not Found</h1></body></html>";
             response = build_http_response("404 Not Found", "text/html", body);
@@ -111,7 +153,6 @@ void handle_client(int client_socket) {
     }
 
     send(client_socket, response.c_str(), response.size(), 0);
-    memset(buffer, 0, BUFFER_SIZE);
     close(client_socket);
 }
 
@@ -126,7 +167,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         std::cerr << "setsockopt failed" << std::endl;
         close(server_fd);
         exit(EXIT_FAILURE);
