@@ -52,18 +52,18 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
    git clone https://github.com/aashishbishow/http_servers.git
    ```
 
-3. **Navigate to Linux folder
+3. **Navigate to Linux folder:**
    ```bash
    cd http_servers/Linux
    ```
 
-4. **Open in a Code editor
+4. **Open in a Code editor:**
    ```bash
    code . 
    # for vs code
    ```
 
-5. **Do the necessary configuration
+5. **Do the necessary configuration:**
    - Read [Customization(#customization-linux-wsl)]
 
 6. **Compile the Server:**
@@ -106,18 +106,18 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
    git clone https://github.com/aashishbishow/http_servers.git
    ```
 
-3. **Navigate to Windows folder
+3. **Navigate to Windows folder:**
    ```powershell
    cd http_servers/Linux
    ```
 
-4. **Open in a Code editor
+4. **Open in a Code editor:**
    ```powershell
    code .
    # for vs code
    ```
 
-5. **Do the necessary configuration
+5. **Do the necessary configuration:**
    - Read [Customization(#customization-windows)]
 
 6. **Compile the Server:**
