@@ -15,7 +15,7 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
 - [Windows Version](#windows-version)
   - [Compilation](#compilation-windows)
   - [Usage](#usage-windows)
-- [Contributing(#contibuting)]
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Features
