@@ -64,7 +64,7 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
    ```
 
 5. **Do the necessary configuration:**
-   - Read [Customization(#customization-linux-wsl)]
+   - Read [Customization](#customization-linux-wsl)
 
 6. **Compile the Server:**
    ```bash
@@ -118,7 +118,7 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
    ```
 
 5. **Do the necessary configuration:**
-   - Read [Customization(#customization-windows)]
+   - Read [Customization](#customization-windows)
 
 6. **Compile the Server:**
    ```powershell
