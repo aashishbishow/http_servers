@@ -1,15 +1,12 @@
 #include <iostream>
-#include <cstring>
-#include <thread>
-#include <vector>
 #include <sstream>
 #include <fstream>
-#include <unordered_map>
+#include <vector>
+#include <thread>
 #include <filesystem>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 
 #define PORT 8080
@@ -32,13 +29,13 @@ std::string build_http_response(const std::string& status, const std::string& co
 
 std::string get_file_content(const std::string& path) {
     std::ifstream file(path, std::ios::in | std::ios::binary);
-    if (file) {
-        std::ostringstream contents;
-        contents << file.rdbuf();
-        file.close();
-        return contents.str();
+    if (!file.is_open()) {
+        return "";
     }
-    return "";
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    file.close();
+    return contents.str();
 }
 
 std::string get_content_type(const std::string& path) {
@@ -89,17 +86,13 @@ void handle_php_request(int client_socket, const std::string& script_path) {
 
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE];
-    int valread;
-
-    // Read data from the client
-    valread = read(client_socket, buffer, BUFFER_SIZE);
+    int valread = read(client_socket, buffer, BUFFER_SIZE);
     if (valread <= 0) {
         std::cerr << "Failed to read from socket" << std::endl;
         close(client_socket);
         return;
     }
 
-    // Simple request parsing
     std::istringstream request(buffer);
     std::string method, path, version;
     request >> method >> path >> version;
@@ -123,6 +116,8 @@ void handle_client(int client_socket) {
             response = build_http_response("404 Not Found", "text/html", body);
         }
     } else if (method == "POST" || method == "PUT" || method == "PATCH") {
+        // Handle POST/PUT/PATCH requests here
+        // Example: Read request body and process accordingly
         body = buffer + request.tellg();
         response = build_http_response("200 OK", "text/plain", "Received " + method + " data:\n" + body);
     } else if (method == "DELETE") {
@@ -164,13 +159,13 @@ int main() {
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         std::cerr << "Socket creation failed" << std::endl;
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) != 0) {
         std::cerr << "setsockopt failed" << std::endl;
         close(server_fd);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     address.sin_family = AF_INET;
@@ -180,13 +175,13 @@ int main() {
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         std::cerr << "Bind failed" << std::endl;
         close(server_fd);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     if (listen(server_fd, 10) < 0) {
         std::cerr << "Listen failed" << std::endl;
         close(server_fd);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     std::cout << "HTTP server is listening on port " << PORT << std::endl;
@@ -210,5 +205,5 @@ int main() {
     }
 
     close(server_fd);
-    return 0;
+    return EXIT_SUCCESS;
 }
