@@ -1,4 +1,4 @@
-# Simple HTTP Server in C++ with PHP Integration
+# HTTP Server in C++ with PHP Integration
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/aashishbishow/http_servers)
 ![GitHub license](https://img.shields.io/github/license/aashishbishow/http_servers)
