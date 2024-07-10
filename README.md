@@ -124,7 +124,7 @@ This repository contains implementations of an HTTP server for both Linux (WSL) 
 
 6. **Compile the Server:**
    ```powershell
-   g++ -std-c++2b -o server.exe http.cpp -lws2_32
+   g++ -std=c++2b -o server.exe http.cpp -lws2_32
    ```
 
 7. **Run the Server:**
