@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <string_view>
 
 // POSIX includes
 #include <sys/socket.h>
@@ -461,6 +462,8 @@ HttpResponse handle_directory(const string& dir_path, const string& url_path) {
 
 // Process HTTP request
 HttpResponse process_request(const HttpRequest& request, const string& client_ip) {
+    log_info("Processing request from IP: " + client_ip);
+
     HttpResponse response;
     
     if (!request.valid) {
